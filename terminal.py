@@ -12,6 +12,9 @@ import _thread
 import time
 import webbrowser
 from tkinter import messagebox
+import os
+import sys
+from ymodem.Modem import Modem
 
 # globals
 serialPort = serial_rx_tx.SerialPort()
@@ -44,7 +47,7 @@ label_comport.config(font="bold")
 comport_edit = Entry(root,width=10)
 comport_edit.place(x=100,y=36)
 comport_edit.config(font="bold")
-comport_edit.insert(END,"COM2")
+comport_edit.insert(END,"COM3")
 
 # serial data callback function
 def OnReceiveSerialData(message):
@@ -82,7 +85,7 @@ def ClearDataCommand():
 def SendDataCommand():
     message = senddata_edit.get()
     if serialPort.IsOpen():
-        message += '\r\n'
+        message += '\n'
         serialPort.Send(message)
         textbox.insert('1.0',message)
     else:
@@ -136,9 +139,28 @@ def DisplayAbout():
     "3 - sending log file messages and receiving messages at the same time\r\n\r\n" 
     "Source code at: Github URL: https://github.com/dalegambill/PythonTerminal\r\n")
 
-def TutorialsWebPage():
-    webbrowser.open("https://www.youtube.com/channel/UCouhHzMMU9c-Qh-TkZl5GDg",
-                    new=1, autoraise=True)
+def SendFile():
+    serialPort.Send('system fwdn\n')
+    serialPort.read_on = False
+    sender = Modem(serialPort)
+
+    os.chdir(sys.path[0])
+    file_path = os.path.abspath('file/ap.bin')
+    try:
+        file_stream = open(file_path, 'rb')
+        file_info = {
+            "name"      :   os.path.basename(file_path),
+            "length"    :   os.path.getsize(file_path),
+            "mtime"     :   os.path.getmtime(file_path),
+            "source"    :   "win"
+        }
+        sender.send(file_stream, info=file_info)
+    except IOError as e:
+        pass
+    finally:
+        serialPort.read_on = True
+        file_stream.close()
+
 
 # COM Port open/close button
 button_openclose = Button(root,text="Open COM Port",width=20,command=OpenCommand)
@@ -166,7 +188,7 @@ button_about.config(font="bold")
 button_about.place(x=620,y=30)
 
 #Tutorials
-button_tutorials = Button(root,text="Tutorials",width=16,command=TutorialsWebPage)
+button_tutorials = Button(root, text="Send File", width=16, command=SendFile)
 button_tutorials.config(font="bold")
 button_tutorials.place(x=780,y=30)
 
@@ -178,7 +200,7 @@ button_tutorials.place(x=780,y=30)
 senddata_edit = Entry(root,width=34)
 senddata_edit.place(x=620,y=78)
 senddata_edit.config(font="bold")
-senddata_edit.insert(END,"Message")
+senddata_edit.insert(END,"")
 
 #Baud Rate label
 label_baud = Label(root,width=10,height=2,text="Baud Rate:")
@@ -189,7 +211,8 @@ label_baud.config(font="bold")
 baudrate_edit = Entry(root,width=10)
 baudrate_edit.place(x=100,y=80)
 baudrate_edit.config(font="bold")
-baudrate_edit.insert(END,"38400")
+# baudrate_edit.insert(END,"115200")
+baudrate_edit.insert(END,"9600")
 
 #
 # The main loop

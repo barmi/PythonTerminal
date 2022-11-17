@@ -17,6 +17,7 @@ class SerialPort:
         self.isopen = False
         self.receivedMessage = None
         self.serialport = serial.Serial()
+        self.read_on = False
 
     def __del__(self):
         try:
@@ -27,6 +28,7 @@ class SerialPort:
 
     def RegisterReceiveCallback(self,aReceiveCallback):
         self.ReceiveCallback = aReceiveCallback
+        self.read_on = True
         try:
             _thread.start_new_thread(self.SerialReadlineThread, ())
         except:
@@ -35,7 +37,7 @@ class SerialPort:
     def SerialReadlineThread(self):
         while True:
             try:
-                if self.isopen:
+                if self.isopen and self.read_on:
                     self.receivedMessage = self.serialport.readline()
                     if self.receivedMessage != "":
                         self.ReceiveCallback(self.receivedMessage)
